@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from borrow.models import Borrow
 from user.serializers import UserDetailSerializer
@@ -12,7 +13,7 @@ class BorrowSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "book",
-            "user",
+            "user_email",
             "borrow_date",
             "expected_return_date",
             "actual_return_date",
@@ -49,5 +50,17 @@ class BorrowDetailSerializer(BorrowSerializer):
             "expected_return_date",
             "actual_return_date",
             "book",
-            "user_email",
+            "user",
+        )
+
+
+class CreateBorrowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Borrow
+        fields = (
+            "id",
+            "book",
+            "user",
+            "borrow_date",
+            "expected_return_date"
         )
