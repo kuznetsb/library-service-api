@@ -1,125 +1,86 @@
-from decimal import Decimal
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.test import APIClient
+
 from book.models import Book
-from book.views import BookViewSet
+from book.serializers import BookSerializer
 
 
-class BookModelTestCase(TestCase):
+class BookPermissionTests(TestCase):
     def setUp(self):
-        Book.objects.create(
-            title="The Great Gatsby",
-            author="F. Scott Fitzgerald",
-            cover=Book.CoverType.HARD,
-            inventory=10,
-            daily_fee=Decimal("2.99"),
+        self.client = APIClient()
+        self.admin = get_user_model().objects.create_user(
+            email="admin@example.com", password="adminpass", is_staff=True
+        )
+        self.regular_user = get_user_model().objects.create_user(
+            email="user@example.com", password="userpass"
         )
 
-    def test_book_str(self):
-        book = Book.objects.get(title="The Great Gatsby")
-        self.assertEqual(str(book), "The Great Gatsby")
+    def test_only_admin_can_create_book(self):
+        self.client.force_authenticate(user=self.regular_user)
 
-    def test_book_unique_constraint(self):
-        book = Book(
-            title="The Great Gatsby",
-            author="F. Scott Fitzgerald",
-            cover=Book.CoverType.SOFT,
-            inventory=5,
-            daily_fee=Decimal("1.99"),
+        data = {
+            "title": "Test Book",
+            "author": "Test Author",
+            "cover": "Softcover",
+            "inventory": 1,
+            "daily_fee": 10.0,
+        }
+        response = self.client.post(reverse("book:books-list"), data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.post(reverse("book:books-list"), data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_only_admin_can_update_book(self):
+        book = Book.objects.create(
+            title="Test Book",
+            author="Test Author",
+            cover="Softcover",
+            inventory=1,
+            daily_fee=10.0,
         )
-        with self.assertRaises(Exception):
-            book.save()
+        url = reverse("book:books-detail", args=[book.id])
+        data = BookSerializer(book).data
 
+        self.client.force_authenticate(user=self.regular_user)
+        data["inventory"] = 2
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-class BookPermissionTestCase(TestCase):
-    def setUp(self):
-        self.factory = APIRequestFactory()
-        self.user = User.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="password",
+        self.client.force_authenticate(user=self.admin)
+        data["inventory"] = 3
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_only_admin_can_delete_book(self):
+        book = Book.objects.create(
+            title="Test Book",
+            author="Test Author",
+            cover="Softcover",
+            inventory=1,
+            daily_fee=10.0,
         )
-        self.view = BookViewSet.as_view({"get": "list", "post": "create"})
-        self.book = Book.objects.create(
-            title="To Kill a Mockingbird",
-            author="Harper Lee",
-            cover=Book.CoverType.SOFT,
-            inventory=5,
-            daily_fee=Decimal("1.99"),
-        )
+        url = reverse("book:books-detail", args=[book.id])
 
-    def test_get_books_unauthenticated(self):
-        request = self.factory.get("books/")
-        response = self.view(request)
-        self.assertEqual(response.status_code, 200)
-
-    def test_create_book_unauthenticated(self):
-        request = self.factory.post(
-            "books/",
-            {
-                "title": "1984",
-                "author": "George Orwell",
-                "cover": Book.CoverType.HARD,
-                "inventory": 5,
-                "daily_fee": "3.99",
-            },
-        )
-        response = self.view(request)
-        self.assertEqual(response.status_code, 403)
-
-    def test_get_book_authenticated(self):
-        request = self.factory.get("/books/")
-        force_authenticate(request, user=self.user)
-        response = self.view(request)
-        self.assertEqual(response.status_code, 200)
-
-    def test_create_book_authenticated_admin(self):
-        request = self.factory.post(
-            "/books/",
-            {
-                "title": "1984",
-                "author": "George Orwell",
-                "cover": Book.CoverType.HARD,
-                "inventory": 5,
-                "daily_fee": "3.99",
-            },
-        )
-        admin_user = User.objects.create(
-            username="admin8", is_staff=True, is_superuser=True
-        )
-        force_authenticate(request, user=admin_user)
-        response = self.view(request)
-        self.assertEqual(response.status_code, 201)
-
-    def test_get_book_detail_unauthenticated(self):
-        request = self.factory.get(f"/books/{self.book.id}/")
-        response = self.view(request, pk=self.book.id)
-        self.assertEqual(response.status_code, 200)
-
-    def test_update_book_detail_unauthenticated(self):
-        request = self.factory.patch(f"/books/{self.book.id}/", {"inventory": 10})
-        response = self.view(request, pk=self.book.id)
-        self.assertEqual(response.status_code, 403)
-
-    def test_get_book_detail_authenticated(self):
-        request = self.factory.get(f"/books/{self.book.id}/")
-        force_authenticate(request, user=self.user)
-        response = self.view(request, pk=self.book.id)
-        self.assertEqual(response.status_code, 200)
-
-    def test_delete_book_as_anonymous_user(self):
-        url = reverse("book-detail", args=[self.book.id])
+        self.client.force_authenticate(user=self.regular_user)
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_delete_book_authenticated_admin(self):
-        admin_user = User.objects.create(
-            username="admin8", is_staff=True, is_superuser=True
+        self.client.force_authenticate(user=self.admin)
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_all_users_can_list_books(self):
+        Book.objects.create(
+            title="Test Book",
+            author="Test Author",
+            cover="Softcover",
+            inventory=1,
+            daily_fee=10.0,
         )
-        request = self.factory.delete(f"/books/{self.book.id}/")
-        force_authenticate(request, user=admin_user)
-        response = self.view(request, pk=self.book.id)
-        self.assertEqual(response.status_code, 204)
+        response = self.client.get(reverse("book:books-list"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
