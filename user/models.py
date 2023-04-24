@@ -1,6 +1,9 @@
+from django.contrib.auth.models import (
+    AbstractUser,
+    BaseUserManager,
+)
 from django.db import models
 from django.utils.translation import gettext as _
-from django.contrib.auth.models import AbstractUser, BaseUserManager
 
 
 class UserManager(BaseUserManager):
@@ -38,8 +41,6 @@ class UserManager(BaseUserManager):
 
 
 class User(AbstractUser):
-    """User model."""
-
     username = None
     email = models.EmailField(_("email address"), unique=True)
 
@@ -47,18 +48,13 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
-    groups = models.ManyToManyField(
-        "auth.Group",
-        related_name="user_groups",  # new related name
-        blank=True,
-        verbose_name="groups",
-        help_text="The groups this user belongs to. A user will get all permissions granted to each of their groups.",
-    )
 
-    user_permissions = models.ManyToManyField(
-        "auth.Permission",
-        related_name="user_permissions_set",  # new related name
-        blank=True,
-        verbose_name="user permissions",
-        help_text="Specific permissions for this user.",
-    )
+    @property
+    def full_name(self) -> str:
+        return self.get_full_name()
+
+    def __str__(self):
+        user = f"User: {self.email}"
+        if self.first_name and self.last_name:
+            user += ", Full name:" + self.get_full_name()
+        return user
