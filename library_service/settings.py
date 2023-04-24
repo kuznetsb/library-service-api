@@ -42,7 +42,6 @@ INSTALLED_APPS = [
     "borrow",
     "payment",
     "user",
-    "rest_framework",
     "rest_framework_simplejwt",
 ]
 
