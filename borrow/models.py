@@ -14,5 +14,5 @@ class Borrow(models.Model):
 
     def __str__(self):
         return (f"Borrowed book: {self.book.title}"
-                f"Borrower: {self.user.first_name}"
+                f"Borrower: {self.user.email}"
                 f"{self.borrow_date} - {self.expected_return_date}")
