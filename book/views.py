@@ -13,7 +13,6 @@ from book.serializers import (
 
 class BookViewSet(viewsets.ModelViewSet):
     queryset = Book.objects.all()
-    serializer_class = BookSerializer
 
     def get_permissions(self):
         if self.action == "list":
