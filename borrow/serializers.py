@@ -1,8 +1,7 @@
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
-
 from borrow.models import Borrow
 from user.serializers import UserDetailSerializer
+from book.serializers import BookSerializer
 
 
 class BorrowSerializer(serializers.ModelSerializer):
@@ -21,7 +20,7 @@ class BorrowSerializer(serializers.ModelSerializer):
 
 
 class BorrowListSerializer(BorrowSerializer):
-    book = serializers.SlugRelatedField(many=True, read_only=True, slug_field="title")
+    book = BookSerializer(many=False, read_only=True)
     user_email = serializers.SlugRelatedField(many=False, read_only=True, slug_field="email")
     borrow_date = serializers.DateField(required=True)
 
@@ -39,7 +38,7 @@ class BorrowListSerializer(BorrowSerializer):
 class BorrowDetailSerializer(BorrowSerializer):
     borrow_date = serializers.DateField(required=True)
     expected_return_date = serializers.DateField(required=True)
-    book = serializers.SlugRelatedField(many=True, read_only=True, slug_field="title")
+    book = BookSerializer(many=False, read_only=True)
     user = UserDetailSerializer()
 
     class Meta:
@@ -60,7 +59,21 @@ class CreateBorrowSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "book",
-            "user",
             "borrow_date",
             "expected_return_date"
         )
+
+    def validate_book(self, value):
+        if value.inventory == 0:
+            raise serializers.ValidationError("Book is out of stock")
+        return value
+
+    def create(self, validated_data):
+        book = validated_data["book"]
+        book.inventory -= 1
+        book.save()
+
+        user = self.context["request"].user
+        validated_data["user"] = user
+
+        return super().create(validated_data)

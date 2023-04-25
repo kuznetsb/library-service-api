@@ -1,166 +1,101 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
-from .models import Borrow
-from book.models import Book
 from django.contrib.auth import get_user_model
-from .serializers import BorrowSerializer, BorrowListSerializer, BorrowDetailSerializer
+from book.models import Book
+from borrow.models import Borrow
 
-User = get_user_model()
+
+BORROW_URL = reverse("borrow:borrowings-list")
 
 
-class BorrowModelTestCase(APITestCase):
+class BorrowViewSetTestCase(APITestCase):
     def setUp(self):
-        self.user = User.objects.create_user(
-            email="testuser@example.com",
-            password="password"
+        self.user = get_user_model().objects.create_user(
+            email='testuser@example.com',
+            password='testpass'
+        )
+        self.user_admin = get_user_model().objects.create_superuser(
+            email='testuser2@example.com',
+            password='testpass2'
         )
         self.book = Book.objects.create(
-            title="Test Book",
-            author="Test Author",
-            cover=Book.CoverType.HARD,
+            title='Test Book',
+            author='Test Author',
             inventory=1,
-            daily_fee=1.0
+            cover=Book.CoverType.HARD,
+            daily_fee=1.2
         )
         self.borrow = Borrow.objects.create(
+            book=self.book,
             user=self.user,
-            expected_return_date="2023-04-30"
+            expected_return_date='2023-04-30'
         )
-        self.borrow.book.add(self.book)
 
-    def test_str_method(self):
-        expected_result = f"Borrowed book: {self.book.title}Borrower: {self.user.email}2023-04-24 - 2023-04-30"
-        self.assertEqual(str(self.borrow), expected_result)
+    def test_list_borrows(self):
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(BORROW_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['book']['title'], self.book.title)
 
-    def test_book_relationship(self):
-        self.assertEqual(self.borrow.book.first(), self.book)
+    def test_list_borrows_with_user_id_param(self):
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(BORROW_URL, {'user_id': self.user.id})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]['book']['title'], self.book.title)
 
-    def test_user_relationship(self):
-        self.assertEqual(self.borrow.user, self.user)
+    def test_create_borrow(self):
+        self.client.force_authenticate(user=self.user)
+        data = {
+            'book': self.book.id,
+            "borrow_date": "2023-04-25",
+            'expected_return_date': '2023-05-07'
+        }
+        response = self.client.post(BORROW_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Borrow.objects.count(), 2)
+        self.assertEqual(Borrow.objects.first().book, self.book)
 
+    def test_create_borrow_out_of_stock(self):
+        self.client.force_authenticate(user=self.user)
+        data = {
+            'book': self.book.id,
+            'expected_return_date': '2023-05-07'
+        }
+        self.book.inventory = 0
+        self.book.save()
+        response = self.client.post(BORROW_URL, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(Borrow.objects.count(), 1)
 
-class BorrowSerializerTestCase(APITestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(
-            email="testuser@example.com",
-            password="password"
-        )
-        self.book = Book.objects.create(
-            title="Test Book",
-            author="Test Author",
-            cover=Book.CoverType.HARD,
-            inventory=1,
-            daily_fee=1.0
-        )
-        self.borrow = Borrow.objects.create(
+    def test_retrieve_borrow(self):
+        url = reverse("borrow:borrowings-detail", args=[self.borrow.id])
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['book']['title'], self.book.title)
+
+    def test_update_borrow(self):
+        url = reverse("borrow:return_borrow", args=[self.borrow.id])
+        self.client.force_authenticate(user=self.user)
+        response = self.client.patch(url, {})
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertTrue(Borrow.objects.get(id=self.borrow.id).actual_return_date)
+        self.assertEqual(self.book.inventory, 1)
+
+    def test_return_borrowing_already_returned(self):
+        borrow = Borrow.objects.create(
+            book=self.book,
             user=self.user,
-            expected_return_date="2023-04-30"
+            expected_return_date=date.today() + timedelta(days=14),
+            actual_return_date=date.today()
         )
-        self.borrow.book.add(self.book)
-
-    def test_borrow_serializer(self):
-        serializer = BorrowSerializer(instance=self.borrow)
-        expected_data = {
-            "id": self.borrow.id,
-            "book": [self.book.id],
-            "user": self.user.id,
-        }
-        self.assertEqual(serializer.data, expected_data)
-
-    def test_borrow_list_serializer(self):
-        serializer = BorrowListSerializer(instance=self.borrow)
-        expected_data = {
-            "id": self.borrow.id,
-            "user": self.user.id,
-            "borrow_date": self.borrow.borrow_date,
-            "expected_return_date": self.borrow.expected_return_date,
-            "book": self.book.title,
-        }
-        self.assertEqual(serializer.data, expected_data)
-
-    def test_borrow_detail_serializer(self):
-        serializer = BorrowDetailSerializer(instance=self.borrow)
-        expected_data = {
-            "id": self.borrow.id,
-            "borrow_date": self.borrow.borrow_date,
-            "expected_return_date": self.borrow.expected_return_date,
-            "actual_return_date": self.borrow.actual_return_date,
-            "book": self.book.title,
-            "user_email": self.user.email,
-        }
-        self.assertEqual(serializer.data, expected_data)
-
-    class BorrowTestCase(APITestCase):
-        def setUp(self):
-            self.user = User.objects.create_user(
-                email="testuser@example.com", password="testpassword"
-            )
-            self.book = Book.objects.create(
-                title="Test Book", author="Test Author", cover=Book.CoverType.HARD, inventory=2, daily_fee=1.99
-            )
-
-        def test_create_borrow(self):
-            self.client.force_authenticate(user=self.user)
-
-            data = {
-                "user": self.user.pk,
-                "book": self.book.pk,
-                "expected_return_date": (timezone.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-            }
-
-            response = self.client.post(reverse("borrow-list"), data, format="json")
-
-            self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-            self.assertEqual(Borrow.objects.count(), 1)
-            self.assertEqual(Borrow.objects.first().user, self.user)
-            self.assertEqual(Borrow.objects.first().book.first(), self.book)
-            self.assertEqual(Borrow.objects.first().expected_return_date, data["expected_return_date"])
-
-        def test_create_borrow_with_nonexistent_user(self):
-            self.client.force_authenticate(user=self.user)
-
-            data = {
-                "user": 999,  # Nonexistent user ID
-                "book": self.book.pk,
-                "expected_return_date": (timezone.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-            }
-
-            response = self.client.post(reverse("borrow-list"), data, format="json")
-
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertEqual(Borrow.objects.count(), 0)
-
-        def test_create_borrow_with_nonexistent_book(self):
-            self.client.force_authenticate(user=self.user)
-
-            data = {
-                "user": self.user.pk,
-                "book": 999,  # Nonexistent book ID
-                "expected_return_date": (timezone.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-            }
-
-            response = self.client.post(reverse("borrow-list"), data, format="json")
-
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertEqual(Borrow.objects.count(), 0)
-
-        def test_create_borrow_with_no_inventory(self):
-            self.client.force_authenticate(user=self.user)
-
-            # Set inventory to 0
-            self.book.inventory = 0
-            self.book.save()
-
-            data = {
-                "user": self.user.pk,
-                "book": self.book.pk,
-                "expected_return_date": (timezone.now() + timedelta(days=7)).strftime("%Y-%m-%d")
-            }
-
-            response = self.client.post(reverse("borrow-list"), data, format="json")
-
-            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-            self.assertEqual(Borrow.objects.count(), 0)
+        response = self.client.patch(BORROW_URL)
+        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        borrow.refresh_from_db()
+        self.assertIsNotNone(borrow.actual_return_date)
+        self.assertEqual(self.book.inventory, 1)
