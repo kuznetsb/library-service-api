@@ -1,3 +1,5 @@
+import datetime
+
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -12,6 +14,8 @@ from borrow.serializers import (
 )
 from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
+
+from borrow.telegrambot import send_notification
 
 
 class BorrowViewSet(viewsets.ModelViewSet):
@@ -73,6 +77,14 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if book.inventory <= 0:
             raise serializers.ValidationError("This book is out of stock.")
         book.save()
+        send_notification(
+            f"User email {self.request.user.email}\n"
+            f"Borrow date: {datetime.date.today()}\n"
+            f"Book title: {book.title}\n"
+            f"Book author: {book.author}\n"
+            f"Daily fee: {book.daily_fee}\n"
+            f"Expected return date {self.request.data['expected_return_date']}"
+        )
         serializer.save(user=self.request.user)
 
     @action(detail=True, methods=["patch"], url_path="return")
