@@ -34,7 +34,6 @@ class BorrowSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-
 class BorrowListSerializer(BorrowSerializer):
     book = BookSerializer(many=False, read_only=True)
     user_email = serializers.SlugRelatedField(

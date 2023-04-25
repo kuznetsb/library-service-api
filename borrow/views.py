@@ -29,7 +29,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Borrow.objects.filter(user=user)
+        queryset = Borrow.objects.filter(user=user).select_related("book", "user")
         is_active = self.request.query_params.get("is_active")
         if is_active:
             queryset = queryset.filter(actual_return_date__isnull=True)
