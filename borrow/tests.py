@@ -29,8 +29,18 @@ class BorrowViewSetTestCase(APITestCase):
         self.borrow = Borrow.objects.create(
             book=self.book, user=self.user, expected_return_date="2023-04-30"
         )
+        self.borrow_admin = Borrow.objects.create(
+            book=self.book, user=self.user_admin, expected_return_date="2023-05-30"
+            )
 
     def test_list_borrows(self):
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.get(BORROW_URL)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]["book"]["title"], self.book.title)
+
+    def test_list_borrows_non_admin_user(self):
         self.client.force_authenticate(user=self.user)
         response = self.client.get(BORROW_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -53,7 +63,7 @@ class BorrowViewSetTestCase(APITestCase):
         }
         response = self.client.post(BORROW_URL, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Borrow.objects.count(), 2)
+        self.assertEqual(Borrow.objects.count(), 3)
         self.assertEqual(Borrow.objects.first().book, self.book)
 
     def test_create_borrow_out_of_stock(self):
@@ -63,7 +73,7 @@ class BorrowViewSetTestCase(APITestCase):
         self.book.save()
         response = self.client.post(BORROW_URL, data)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(Borrow.objects.count(), 1)
+        self.assertEqual(Borrow.objects.count(), 2)
 
     def test_retrieve_borrow(self):
         url = reverse("borrow:borrowings-detail", args=[self.borrow.id])
@@ -92,3 +102,12 @@ class BorrowViewSetTestCase(APITestCase):
         borrow.refresh_from_db()
         self.assertIsNotNone(borrow.actual_return_date)
         self.assertEqual(self.book.inventory, 1)
+        self.client.force_authenticate(user=self.user)
+        response = self.client.get(BORROW_URL, {"is_active": "True"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["book"]["title"], self.book.title)
+        response = self.client.get(BORROW_URL, {"is_active": "False"})
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 2)
+        self.assertEqual(response.data[0]["book"]["title"], self.book.title)
