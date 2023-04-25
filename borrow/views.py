@@ -14,32 +14,7 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 
 
-@extend_schema(
-    summary="Borrow viewset",
-    description="API endpoints for managing book borrowings.",
-    parameters=[
-        OpenApiParameter(
-            name='is_active',
-            type=OpenApiTypes.BOOL,
-            location=OpenApiParameter.QUERY,
-            description="Filter by active status"
-        ),
-        OpenApiParameter(
-            name='user_id',
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.QUERY,
-            description="Filter by user ID (Staff only)"
-        ),
-    ],
-    responses={
-        200: BorrowListSerializer(many=True),
-        401: "Authentication credentials were not provided.",
-        403: "You do not have permission to perform this action.",
-    },
-)
 class BorrowViewSet(viewsets.ModelViewSet):
-    queryset = Borrow.objects.all()
-
     def get_serializer_class(self):
         if self.action == "list":
             return BorrowListSerializer
@@ -69,8 +44,27 @@ class BorrowViewSet(viewsets.ModelViewSet):
                 raise PermissionDenied(
                     "You do not have permission to view all users’ borrowings."
                 )
-            queryset = Borrow.objects.filter(user_id=user_id)
+            queryset = queryset.filter(user_id=user_id)
         return queryset
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="is_active",
+                type=OpenApiTypes.STR,
+                required=False,
+                description="Whether the borrowing is active or not.",
+            ),
+            OpenApiParameter(
+                name="user_id",
+                type=OpenApiTypes.INT,
+                required=False,
+                description="The id of the user who borrowed the book. (Staff only)",
+            ),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         book = serializer.validated_data["book"]
