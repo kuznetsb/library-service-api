@@ -5,7 +5,7 @@ from rest_framework.test import APIClient
 
 from payment.models import Payment, PaymentStatus, PaymentType
 from borrow.models import Borrow
-from book.models import Book
+from book.models import Book, CoverType
 from django.contrib.auth import get_user_model
 
 
@@ -17,7 +17,7 @@ class PaymentModelTest(TestCase):
         self.book = Book.objects.create(
             title="Test Book",
             author="Test Author",
-            cover=Book.CoverType.HARD,
+            cover=CoverType.HARD.value,
             inventory=10,
             daily_fee=1.50,
         )
@@ -53,7 +53,7 @@ class PaymentListAPIViewTest(TestCase):
         self.book = Book.objects.create(
             title="Test Book",
             author="Test Author",
-            cover=Book.CoverType.HARD,
+            cover=CoverType.HARD.value,
             inventory=10,
             daily_fee=1.50,
         )
@@ -122,5 +122,3 @@ class PaymentListAPIViewTest(TestCase):
         response = self.client.get(reverse("payment:payment-list"))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
-
-
