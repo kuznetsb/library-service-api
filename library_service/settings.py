@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -26,6 +26,12 @@ SECRET_KEY = "django-insecure-s#3)w-k4=akgmxp%3xq1p#8z*97w1reuex1xcj=@gy(z!np)aw
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+
+STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY")
+STRIPE_PUBLIC_KEY = os.environ.get("STRIPE_PUBLIC_KEY")
+STRIPE_SUCCESS_URL = "http://localhost:8000/api/payments/success/"
+STRIPE_CANCEL_URL = "http://localhost:8000/api/payments/cancel/"
 
 
 # Application definition
