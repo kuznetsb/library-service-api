@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "user",
     "rest_framework_simplejwt",
     "drf_spectacular",
+    "django_q",
 ]
 
 MIDDLEWARE = [
