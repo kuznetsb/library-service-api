@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
-from book.models import Book
+from book.models import Book, CoverType
 from borrow.models import Borrow
 
 
@@ -23,7 +23,7 @@ class BorrowViewSetTestCase(APITestCase):
             title="Test Book",
             author="Test Author",
             inventory=1,
-            cover=Book.CoverType.HARD,
+            cover=CoverType.HARD.value,
             daily_fee=1.2,
         )
         self.borrow = Borrow.objects.create(
