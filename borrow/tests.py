@@ -103,7 +103,7 @@ class BorrowViewSetTestCase(APITestCase):
             actual_return_date=date.today(),
         )
         response = self.client.patch(BORROW_URL)
-        self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         borrow.refresh_from_db()
         self.assertIsNotNone(borrow.actual_return_date)
         self.assertEqual(self.book.inventory, 1)
