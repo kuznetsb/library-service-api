@@ -10,10 +10,10 @@ class Borrow(models.Model):
     actual_return_date = models.DateField(blank=True, null=True)
     book = models.ForeignKey(
         Book, on_delete=models.CASCADE, related_name="borrows"
-    )  # import book model from book app
+    )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="borrows"
-    )  # import user model
+    )
 
     def __str__(self):
         return (

@@ -55,10 +55,10 @@ class BorrowListSerializer(BorrowSerializer):
 
 
 class BorrowDetailSerializer(BorrowSerializer):
-    borrow_date = serializers.DateField(required=True)
-    expected_return_date = serializers.DateField(required=True)
+    borrow_date = serializers.DateField(read_only=True)
+    expected_return_date = serializers.DateField(read_only=True)
     book = BookSerializer(many=False, read_only=True)
-    user = UserDetailSerializer()
+    user = UserDetailSerializer(read_only=True)
 
     class Meta:
         model = Borrow
@@ -70,3 +70,4 @@ class BorrowDetailSerializer(BorrowSerializer):
             "book",
             "user",
         )
+        read_only_fields = ("actual_return_date",)

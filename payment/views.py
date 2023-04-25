@@ -25,4 +25,3 @@ class PaymentDetailAPIView(generics.RetrieveAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentDetailSerializer
     permission_classes = [IsAdminOrOwner]
-

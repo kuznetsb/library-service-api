@@ -14,7 +14,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "session_url",
             "session",
             "money_to_pay",
-            "created_at"
+            "created_at",
         ]
 
 

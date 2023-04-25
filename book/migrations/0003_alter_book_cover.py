@@ -4,15 +4,17 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('book', '0002_alter_book_inventory'),
+        ("book", "0002_alter_book_inventory"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='book',
-            name='cover',
-            field=models.CharField(choices=[('Hardcover', 'Hardcover'), ('Softcover', 'Softcover')], max_length=255),
+            model_name="book",
+            name="cover",
+            field=models.CharField(
+                choices=[("Hardcover", "Hardcover"), ("Softcover", "Softcover")],
+                max_length=255,
+            ),
         ),
     ]
