@@ -31,7 +31,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Borrow.objects.filter(user=user).select_related("book", "user")
         is_active = self.request.query_params.get("is_active")
-        if is_active:
+        if is_active == "True":
             queryset = queryset.filter(actual_return_date__isnull=True)
         user_id = self.request.query_params.get("user_id")
         if user_id:
@@ -49,7 +49,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         book.save()
         serializer.save(user=self.request.user)
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["patch"], url_path="return")
     def return_borrow(self, request, pk=None):
         borrowing = self.get_object()
         if borrowing.actual_return_date:
