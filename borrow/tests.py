@@ -4,9 +4,12 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+
 from book.models import Book, CoverType
 from borrow.models import Borrow
 
+from borrow.telegrambot import bot_token, chat_id, send_notification
+from unittest.mock import patch
 
 BORROW_URL = reverse("borrow:borrowings-list")
 
@@ -111,3 +114,64 @@ class BorrowViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["book"]["title"], self.book.title)
+
+
+class BorrowViewSetTelegramTestCase(APITestCase):
+    def setUp(self):
+        self.user_admin = get_user_model().objects.create_superuser(
+            email="admin2@example.com", password="adminpass2"
+        )
+        self.book = Book.objects.create(
+            title="Test Book1",
+            author="Test Author",
+            inventory=10,
+            cover=CoverType.HARD.value,
+            daily_fee=1.9,
+        )
+
+        self.borrow_data = {
+            "book": self.book.pk,
+            "borrow_date": str(date.today()),
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+    def test_env_variables(self):
+        assert bot_token is not None
+        assert chat_id is not None
+
+    @patch("borrow.telegrambot.requests.get")
+    def test_send_notification(self, mock_requests_get):
+        message = "test_message"
+
+        send_notification(message)
+
+        expected_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        expected_params = {"chat_id": chat_id, "text": message}
+        mock_requests_get.assert_called_once_with(expected_url, expected_params)
+
+    @patch("borrow.views.send_notification")
+    def test_create_borrow_unauthorized_notification(self, mock_send_notification):
+        response = self.client.post(BORROW_URL, data=self.borrow_data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Borrow.objects.count(), 0)
+        mock_send_notification.assert_not_called()
+
+    @patch("borrow.views.send_notification")
+    def test_create_borrow_admin_notification(self, mock_send_notification):
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.post(BORROW_URL, data=self.borrow_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Borrow.objects.count(), 1)
+        self.assertEqual(
+            response.data,
+            {
+                "id": 1,
+                "book": 1,
+                "user_email": self.user_admin.email,
+                "borrow_date": self.borrow_data["borrow_date"],
+                "expected_return_date": self.borrow_data["expected_return_date"],
+                "actual_return_date": None
+            }
+        )
+        print(mock_send_notification)
+        mock_send_notification.assert_called_once()
