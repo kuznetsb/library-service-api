@@ -7,7 +7,6 @@ from borrow.serializers import (
     BorrowSerializer,
     BorrowListSerializer,
     BorrowDetailSerializer,
-    CreateBorrowSerializer,
 )
 from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
@@ -22,9 +21,6 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
         if self.action == "retrieve":
             return BorrowDetailSerializer
-
-        if self.action == "create":
-            return CreateBorrowSerializer
 
         return BorrowSerializer
 
