@@ -144,3 +144,14 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
 }
+
+Q_CLUSTER = {
+    "name": "library_service",
+    "workers": 1,
+    "timeout": 600,
+    "orm": "default",
+    "save_limit": 0,
+    "ack_failures": True,
+    "max_attempts": 1,
+    "attempt_count": 1,
+}
