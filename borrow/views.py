@@ -53,7 +53,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
                 name="is_active",
                 type=OpenApiTypes.STR,
                 required=False,
-                description="Whether the borrowing is active or not.",
+                description="Whether the borrowing is active or not. (True or False)",
             ),
             OpenApiParameter(
                 name="user_id",
