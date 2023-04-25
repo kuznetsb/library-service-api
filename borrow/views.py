@@ -11,6 +11,8 @@ from borrow.serializers import (
 from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 
+from borrow.telegrambot import send_notification
+
 
 class BorrowViewSet(viewsets.ModelViewSet):
     queryset = Borrow.objects.all()
@@ -47,6 +49,15 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if book.inventory <= 0:
             raise serializers.ValidationError("This book is out of stock.")
         book.save()
+        user = serializer.validated_data["user"]
+        send_notification(
+            f"User email {user.id}\n"
+            # f"Borrow date: {borrow.borrow_date}\n"
+            f"Book title: {book.title}\n"
+            f"Book author: {book.author}\n"
+            f"Daily fee: {book.daily_fee}\n"
+            f"Expected return date {Borrow.expected_return_date}"
+        )
         serializer.save(user=self.request.user)
 
     @action(detail=True, methods=["patch"], url_path="return")

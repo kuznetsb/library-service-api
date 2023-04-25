@@ -1,33 +1,7 @@
-# import os
-#
-# import requests
-# from dotenv import load_dotenv
-#
-# load_dotenv()
-#
-# bot_token = os.getenv("BOT_TOKEN")
-# chat_id = os.getenv("CHAT_ID")
-#
-# # MY_CHANNEL_NAME = '@library_delta_bot'
-# MY_MESSAGE_TEXT = 'Hello guys!'
-#
-# response = requests.get(f'https://api.telegram.org/bot{bot_token}/sendMessage', {
-#     'chat_id': chat_id,
-#     'text': MY_MESSAGE_TEXT
-# })
-#
-# if response.status_code == 200:
-#     print('ok')
-# else:
-#     print(response.text)  # Do what you want with response
-import asyncio
-import telegram
 import os
-from django.db.models.signals import post_save
-from django.dispatch import receiver
-from dotenv import load_dotenv
 
-from borrow.models import Borrow
+import requests
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -35,9 +9,36 @@ bot_token = os.getenv("BOT_TOKEN")
 chat_id = os.getenv("CHAT_ID")
 
 
-async def send_notification(message):
-    bot = telegram.Bot(token=bot_token)
-    await bot.send_message(chat_id=chat_id, text=message)
+def send_notification(message):
+    response = requests.get(f'https://api.telegram.org/bot{bot_token}/sendMessage', {
+        'chat_id': chat_id,
+        'text': message
+    })
+
+    if response.status_code == 200:
+        print('ok')
+    else:
+        print(response.text)  # Do what you want with response
+
+
+# import asyncio
+# import telegram
+# import os
+# from django.db.models.signals import post_save
+# from django.dispatch import receiver
+# from dotenv import load_dotenv
+#
+# from borrow.models import Borrow
+
+# load_dotenv()
+#
+# bot_token = os.getenv("BOT_TOKEN")
+# chat_id = os.getenv("CHAT_ID")
+#
+#
+# async def send_notification(message):
+#     bot = telegram.Bot(token=bot_token)
+#     await bot.send_message(chat_id=chat_id, text=message)
 
 #
 # def create_borrow_message(borrow):
@@ -51,6 +52,6 @@ async def send_notification(message):
 #         message = create_borrow_message(instance)
 #         send_notification(message)
 
-
-message = "Hello, World!"
-asyncio.run(send_notification(message))
+#
+# message = "Hello, World!"
+# asyncio.run(send_notification(message))
