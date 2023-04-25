@@ -5,21 +5,25 @@ import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('book', '0001_initial'),
-        ('borrow', '0001_initial'),
+        ("book", "0001_initial"),
+        ("borrow", "0001_initial"),
     ]
 
     operations = [
         migrations.RemoveField(
-            model_name='borrow',
-            name='book',
+            model_name="borrow",
+            name="book",
         ),
         migrations.AddField(
-            model_name='borrow',
-            name='book',
-            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.CASCADE, related_name='borrows', to='book.book'),
+            model_name="borrow",
+            name="book",
+            field=models.ForeignKey(
+                default=1,
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="borrows",
+                to="book.book",
+            ),
             preserve_default=False,
         ),
     ]

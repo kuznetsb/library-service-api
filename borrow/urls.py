@@ -8,7 +8,11 @@ router.register("", BorrowViewSet, basename="borrowings")
 
 urlpatterns = [
     path("", include(router.urls)),
-    path("<int:pk>/return/", BorrowViewSet.as_view({"patch": "return_borrow"}), name="return_borrow"),
+    path(
+        "<int:pk>/return/",
+        BorrowViewSet.as_view({"patch": "return_borrow"}),
+        name="return_borrow",
+    ),
 ]
 
 app_name = "borrow"

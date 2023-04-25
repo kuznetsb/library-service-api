@@ -14,24 +14,20 @@ BORROW_URL = reverse("borrow:borrowings-list")
 class BorrowViewSetTestCase(APITestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
-            email='testuser@example.com',
-            password='testpass'
+            email="testuser@example.com", password="testpass"
         )
         self.user_admin = get_user_model().objects.create_superuser(
-            email='testuser2@example.com',
-            password='testpass2'
+            email="testuser2@example.com", password="testpass2"
         )
         self.book = Book.objects.create(
-            title='Test Book',
-            author='Test Author',
+            title="Test Book",
+            author="Test Author",
             inventory=1,
             cover=Book.CoverType.HARD,
-            daily_fee=1.2
+            daily_fee=1.2,
         )
         self.borrow = Borrow.objects.create(
-            book=self.book,
-            user=self.user,
-            expected_return_date='2023-04-30'
+            book=self.book, user=self.user, expected_return_date="2023-04-30"
         )
 
     def test_list_borrows(self):
@@ -39,21 +35,21 @@ class BorrowViewSetTestCase(APITestCase):
         response = self.client.get(BORROW_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['book']['title'], self.book.title)
+        self.assertEqual(response.data[0]["book"]["title"], self.book.title)
 
     def test_list_borrows_with_user_id_param(self):
         self.client.force_authenticate(user=self.user_admin)
-        response = self.client.get(BORROW_URL, {'user_id': self.user.id})
+        response = self.client.get(BORROW_URL, {"user_id": self.user.id})
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]['book']['title'], self.book.title)
+        self.assertEqual(response.data[0]["book"]["title"], self.book.title)
 
     def test_create_borrow(self):
         self.client.force_authenticate(user=self.user)
         data = {
-            'book': self.book.id,
+            "book": self.book.id,
             "borrow_date": "2023-04-25",
-            'expected_return_date': '2023-05-07'
+            "expected_return_date": "2023-05-07",
         }
         response = self.client.post(BORROW_URL, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -62,10 +58,7 @@ class BorrowViewSetTestCase(APITestCase):
 
     def test_create_borrow_out_of_stock(self):
         self.client.force_authenticate(user=self.user)
-        data = {
-            'book': self.book.id,
-            'expected_return_date': '2023-05-07'
-        }
+        data = {"book": self.book.id, "expected_return_date": "2023-05-07"}
         self.book.inventory = 0
         self.book.save()
         response = self.client.post(BORROW_URL, data)
@@ -77,7 +70,7 @@ class BorrowViewSetTestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['book']['title'], self.book.title)
+        self.assertEqual(response.data["book"]["title"], self.book.title)
 
     def test_update_borrow(self):
         url = reverse("borrow:return_borrow", args=[self.borrow.id])
@@ -92,7 +85,7 @@ class BorrowViewSetTestCase(APITestCase):
             book=self.book,
             user=self.user,
             expected_return_date=date.today() + timedelta(days=14),
-            actual_return_date=date.today()
+            actual_return_date=date.today(),
         )
         response = self.client.patch(BORROW_URL)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)

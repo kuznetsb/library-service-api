@@ -21,7 +21,9 @@ class BorrowSerializer(serializers.ModelSerializer):
 
 class BorrowListSerializer(BorrowSerializer):
     book = BookSerializer(many=False, read_only=True)
-    user_email = serializers.SlugRelatedField(many=False, read_only=True, slug_field="email")
+    user_email = serializers.SlugRelatedField(
+        many=False, read_only=True, slug_field="email"
+    )
     borrow_date = serializers.DateField(required=True)
 
     class Meta:
@@ -56,12 +58,7 @@ class BorrowDetailSerializer(BorrowSerializer):
 class CreateBorrowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Borrow
-        fields = (
-            "id",
-            "book",
-            "borrow_date",
-            "expected_return_date"
-        )
+        fields = ("id", "book", "borrow_date", "expected_return_date")
 
     def validate_book(self, value):
         if value.inventory == 0:
