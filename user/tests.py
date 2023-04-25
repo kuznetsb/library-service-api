@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 from rest_framework.test import APIClient
 
 
@@ -12,7 +13,8 @@ class UserSerializerTestCase(TestCase):
             "email": "test@example.com",
             "password": "testpass",
         }
-        res = self.client.post("/api/user/register/", payload)
+        url = reverse("user:create_user")
+        res = self.client.post(url, payload)
         self.assertEqual(res.status_code, 201)
         user = get_user_model().objects.get(**res.data)
         self.assertTrue(user.check_password(payload["password"]))
@@ -23,7 +25,8 @@ class UserSerializerTestCase(TestCase):
             "email": "test@example.com",
             "password": "pw",
         }
-        res = self.client.post("/api/user/register/", payload)
+        url = reverse("user:create_user")
+        res = self.client.post(url, payload)
         self.assertEqual(res.status_code, 400)
         user_exists = (
             get_user_model()
@@ -41,8 +44,9 @@ class UserSerializerTestCase(TestCase):
             first_name="John",
             last_name="Doe",
         )
+        url = reverse("user:manage_user")
         self.client.force_authenticate(user=user)
-        res = self.client.get("/api/user/me/")
+        res = self.client.get(url)
         self.assertEqual(res.status_code, 200)
         self.assertEqual(
             res.data,
@@ -65,8 +69,9 @@ class UserSerializerTestCase(TestCase):
             "last_name": "Doe",
             "password": "newtestpass",
         }
+        url = reverse("user:manage_user")
         self.client.force_authenticate(user=user)
-        res = self.client.patch("/api/user/me/", payload)
+        res = self.client.patch(url, payload)
         user.refresh_from_db()
         self.assertEqual(res.status_code, 200)
         self.assertEqual(user.first_name, payload["first_name"])
