@@ -1,3 +1,5 @@
+import datetime
+
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -75,14 +77,13 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if book.inventory <= 0:
             raise serializers.ValidationError("This book is out of stock.")
         book.save()
-        user = serializer.validated_data["user"]
         send_notification(
-            f"User email {user.id}\n"
-            # f"Borrow date: {borrow.borrow_date}\n"
+            f"User email {self.request.user.email}\n"
+            f"Borrow date: {datetime.date.today()}\n"
             f"Book title: {book.title}\n"
             f"Book author: {book.author}\n"
             f"Daily fee: {book.daily_fee}\n"
-            f"Expected return date {Borrow.expected_return_date}"
+            f"Expected return date {self.request.data['expected_return_date']}"
         )
         serializer.save(user=self.request.user)
 
