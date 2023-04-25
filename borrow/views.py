@@ -3,7 +3,7 @@ from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
-
+from rest_framework.permissions import IsAuthenticated
 from borrow.models import Borrow
 from borrow.serializers import (
     BorrowSerializer,
@@ -15,6 +15,8 @@ from rest_framework.response import Response
 
 
 class BorrowViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAuthenticated,)
+
     def get_serializer_class(self):
         if self.action == "list":
             return BorrowListSerializer
