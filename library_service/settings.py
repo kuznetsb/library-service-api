@@ -147,8 +147,9 @@ SPECTACULAR_SETTINGS = {
 
 Q_CLUSTER = {
     "name": "library_service",
-    "workers": 1,
-    "timeout": 600,
+    "workers": 8,
+    "recycle": 500,
+    "timeout": 60,
     "orm": "default",
     "save_limit": 0,
     "ack_failures": True,
