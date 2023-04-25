@@ -17,6 +17,8 @@ class BorrowSerializer(serializers.ModelSerializer):
             "expected_return_date",
             "actual_return_date",
         )
+        read_only_fields = ("actual_return_date",)
+
 
     def validate_book(self, value):
         if value.inventory == 0:
