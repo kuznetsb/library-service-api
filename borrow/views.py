@@ -1,4 +1,6 @@
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 
@@ -12,6 +14,29 @@ from rest_framework import viewsets, status, serializers
 from rest_framework.response import Response
 
 
+@extend_schema(
+    summary="Borrow viewset",
+    description="API endpoints for managing book borrowings.",
+    parameters=[
+        OpenApiParameter(
+            name='is_active',
+            type=OpenApiTypes.BOOL,
+            location=OpenApiParameter.QUERY,
+            description="Filter by active status"
+        ),
+        OpenApiParameter(
+            name='user_id',
+            type=OpenApiTypes.INT,
+            location=OpenApiParameter.QUERY,
+            description="Filter by user ID (Staff only)"
+        ),
+    ],
+    responses={
+        200: BorrowListSerializer(many=True),
+        401: "Authentication credentials were not provided.",
+        403: "You do not have permission to perform this action.",
+    },
+)
 class BorrowViewSet(viewsets.ModelViewSet):
     queryset = Borrow.objects.all()
 
@@ -28,8 +53,13 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return super().dispatch(*args, **kwargs)
 
     def get_queryset(self):
+        queryset = Borrow.objects.select_related("book", "user")
         user = self.request.user
-        queryset = Borrow.objects.filter(user=user).select_related("book", "user")
+
+        if user.is_staff:
+            queryset = queryset.all()
+        else:
+            queryset = queryset.filter(user=user)
         is_active = self.request.query_params.get("is_active")
         if is_active == "True":
             queryset = queryset.filter(actual_return_date__isnull=True)
