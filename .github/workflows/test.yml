@@ -21,4 +21,4 @@ jobs:
           pip install -r requirements.txt
           pip install "python-dotenv[cli]"
       - name: Load environment variables from .env
-        run: dotenv -f .env python manage.py test
+        run: dotenv -f .env /path/to/python manage.py test
