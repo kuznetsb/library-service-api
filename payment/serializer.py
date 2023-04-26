@@ -10,7 +10,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "id",
             "status",
             "type",
-            "borrowing_id",
+            "borrowing",
             "session_url",
             "session_id",
             "money_to_pay",
@@ -23,22 +23,22 @@ class PaymentListSerializer(serializers.ModelSerializer):
         model = Payment
         fields = [
             "id",
-            "borrowing_id",
+            "borrowing",
             "status",
             "money_to_pay",
         ]
 
 
 class PaymentDetailSerializer(serializers.ModelSerializer):
-    borrowing_date = serializers.ReadOnlyField(source="borrowing_id.borrow_date")
-    book_title = serializers.ReadOnlyField(source="borrowing_id.book.title")
-    user_email = serializers.ReadOnlyField(source="borrowing_id.user.email")
+    borrowing_date = serializers.ReadOnlyField(source="borrowing.borrow_date")
+    book_title = serializers.ReadOnlyField(source="borrowing.book.title")
+    user_email = serializers.ReadOnlyField(source="borrowing.user.email")
 
     class Meta:
         model = Payment
         fields = [
             "id",
-            "borrowing_id",
+            "borrowing",
             "book_title",
             "borrowing_date",
             "user_email",

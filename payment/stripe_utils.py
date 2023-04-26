@@ -16,21 +16,21 @@ from payment.models import Payment
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
-def create_stripe_session(borrowing_id):
+def create_stripe_session(borrowing):
     url = "http://127.0.0.1:8000/api/payments"
-    if datetime.datetime.now().date() < borrowing_id.expected_return_date:
+    if datetime.datetime.now().date() < borrowing.expected_return_date:
         type_payment = Payment.payment_type.PaymentType.PAYMENT
         money_to_pay = (
-                               borrowing_id.expected_return_date - borrowing_id.borrow_date
-                       ).days * borrowing_id.book.daily_fee
+                               borrowing.expected_return_date - borrowing_id.borrow_date
+                       ).days * borrowing.book.daily_fee
     else:
         type_payment = Payment.payment_type.PaymentType.FINE
         money_to_pay = (
-                               borrowing_id.actual_return - borrowing_id.expected_return_date
-                       ).days * 2 * borrowing_id.book.daily_fee
+                               borrowing.actual_return - borrowing_id.expected_return_date
+                       ).days * 2 * borrowing.book.daily_fee
 
-    unit_amount = int(borrowing_id.book.daily_fee * 100) * (
-            borrowing_id.expected_return_date - borrowing_id.borrow_date).days  # Convert to cents
+    unit_amount = int(borrowing.book.daily_fee * 100) * (
+            borrowing_id.expected_return_date - borrowing.borrow_date).days  # Convert to cents
 
     session = checkout.Session.create(
         payment_method_types=["card"],
@@ -38,7 +38,7 @@ def create_stripe_session(borrowing_id):
             "price_data": {
                 "currency": "usd",
                 "product_data": {
-                    "name": f"Borrowing {borrowing_id.book.title}",
+                    "name": f"Borrowing {borrowing.book.title}",
                 },
                 "unit_amount": unit_amount,
             },
@@ -52,7 +52,7 @@ def create_stripe_session(borrowing_id):
     payment = Payment.objects.create(
         status=Payment.status.PaymentStatus.PENDING,
         payment_type=type_payment,
-        borrowing_id=borrowing_id,
+        borrowing=borrowing,
         money_to_pay=money_to_pay,
         session_url=session.url,
         session_id=session.id,
@@ -62,4 +62,4 @@ def create_stripe_session(borrowing_id):
 
 
 if __name__ == "__main__":
-    create_stripe_session(borrowing_id=Borrow.objects.get(pk=3))
+    create_stripe_session(borrowing=Borrow.objects.get(pk=3))

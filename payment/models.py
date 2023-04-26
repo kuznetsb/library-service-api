@@ -26,7 +26,7 @@ class Payment(models.Model):
         max_length=10,
         choices=[(type.value, type.value) for type in PaymentType]
     )
-    borrowing_id = models.OneToOneField(
+    borrowing = models.OneToOneField(
         Borrow, unique=True,
         on_delete=models.CASCADE, related_name="payment"
     )
@@ -40,7 +40,7 @@ class Payment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return (f"Payment for {self.borrowing_id.user.email} for {self.borrowing_id.book.title}" 
+        return (f"Payment for {self.borrowing.user.email} for {self.borrowing.book.title}" 
                 f"{self.id} - {self.status} - {self.payment_type} - {self.money_to_pay}")
 
     class Meta:
