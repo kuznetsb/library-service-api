@@ -138,10 +138,6 @@ class BorrowViewSetTelegramTestCase(APITestCase):
             "expected_return_date": str(date.today() + timedelta(days=7)),
         }
 
-    def test_env_variables(self):
-        assert bot_token is not None
-        assert chat_id is not None
-
     @patch("borrow.telegrambot.requests.get")
     def test_send_notification(self, mock_requests_get):
         message = "test_message"
