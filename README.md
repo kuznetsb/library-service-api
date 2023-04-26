@@ -1,34 +1,40 @@
 # Library API
-This API allows users to borrow books from the library, with the ability to return them after a set period of time. Users who have overdue books will incur fines, and will be unable to borrow additional books until their fines are paid.
+This is a full-fledged API for organizing the work of the library with the functionality of tracking the number of available books. It provides for the possibility of borrowing a book with tracking of the return time. If the user misses the date of delivery of the book, a fine is imposed on him. This API is written based on Django and Django REST technologies and Stripe payment gateway technology.
+Swager documentation is available for review.
 
-## Models
+## The API has the following features:
+Book management: add new books to the system, update book information, and track availability.
+Borrowing management: check out books to users, set due dates, and track borrowing history.
+User management: add new users, update user information, and track borrowing history.
+Payment management: track payments made by users, generate payment reports.
+Notification management: send automated notifications to library managers telegram chat about upcoming due dates
+
+## Getting Started
+### Python3 and PostgreSQL must be installed on your machine.
+
+1. Clone this repository to your local machine ```git clone the-link-from-your-forked-repo```.
+2. Create a virtual environment using ```python -m venv env```.
+3. Activate the virtual environment using ```source env/bin/activate(on macOS)``` Or ```env\Scripts\activate (on Windows)```.
+4. Install the required dependencies using ```pip install -r requirements.txt```.
+5. Set up the database by running ```python manage.py migrate```.
+6. Start the development server using ```python manage.py runserver```.
+7. You can now access the API endpoints at http://localhost:8000/api/.
+
+## Models in system
 - Book: A model representing a book in the library, with fields for title, author, description, and quantity.
 - User: A model representing a user of the library, with fields for name, email, and password.
 - Borrowing: A model representing a borrowing of a book by a user, with fields for the user, the book, the date borrowed, and the date due.
 - Payment: A model representing a payment made by a user for a late book return, with fields for the user, the amount, and the date paid.
 
-## Features
-* Users can register and log in to the system.
-* Users can borrow a book from the library for a set period of time.
-* Users can return a book to the library before or after the due date.
-* Users who return a book after the due date will be charged a late fee.
-* Users with outstanding fees or overdue books will be unable to borrow new books until their account is cleared.
 
-## Getting Started
-1. Clone this repository to your local machine.
-2. Install the required dependencies using ```pip install -r requirements.txt```.
-3. Set up the database by running ```python manage.py migrate```.
-4. Start the development server using ```python manage.py runserver```.
-5. You can now access the API endpoints at http://localhost:8000/api/.
-
-## API Endpoints
+## Endpoints for working with the API
 - ### Books
     - GET /api/books/
     - GET /api/books/{id}/
-    - POST /api/books/
-    - PUT /api/books/{id}/
-    - PATCH /api/books/{id}/
-    - DELETE /api/books/{id}/
+    - POST /api/books/ (admin only)
+    - PUT /api/books/{id}/ (admin only)
+    - PATCH /api/books/{id}/ (admin only) 
+    - DELETE /api/books/{id}/ (admin only)
 
 - ### Users
     - GET /api/users/me/
@@ -42,18 +48,22 @@ This API allows users to borrow books from the library, with the ability to retu
     - GET /api/borrowings/
     - GET /api/borrowings/{id}/
     - POST /api/borrowings/
-    - PUT /api/borrowings/{id}/
-    - PATCH /api/borrowings/{id}/
-    - PATCH /api/borrowings/{id}/return/
-    - DELETE /api/borrowings/{id}/
+    - PUT /api/borrowings/{id}/ (admin only)
+    - PATCH /api/borrowings/{id}/ (admin only)
+    - PATCH /api/borrowings/{id}/return/ 
+    - DELETE /api/borrowings/{id}/ (admin only)
 
 - ### Payments
-    - GET /api/payments/
-    - GET /api/payments/{id}/
-    - POST /api/payments/
-    - PUT /api/payments/{id}/
-    - DELETE /api/payments/{id}/
+    - GET /api/payments/success/
+    - GET /api/payments/cancel/
 
 ## Dependencies
 - Django
 - Django REST framework
+- Stripe
+- Django REST framework Simple JWT
+- Swagger
+- Redis
+- Django q
+
+
