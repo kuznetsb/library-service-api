@@ -102,6 +102,7 @@ class BorrowViewSetTestCase(APITestCase):
             expected_return_date=date.today() + timedelta(days=14),
             actual_return_date=date.today(),
         )
+        self.client.force_authenticate(user=self.user)
         response = self.client.patch(BORROW_URL)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         borrow.refresh_from_db()
