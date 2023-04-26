@@ -12,7 +12,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             "type",
             "borrowing",
             "session_url",
-            "session",
+            "session_id",
             "money_to_pay",
             "created_at"
         ]
@@ -44,6 +44,6 @@ class PaymentDetailSerializer(serializers.ModelSerializer):
             "user_email",
             "money_to_pay",
             "payment_method",
-            "session",
+            "session_id",
             "status",
         ]

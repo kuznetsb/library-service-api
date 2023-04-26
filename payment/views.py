@@ -1,4 +1,5 @@
 from rest_framework import generics
+
 from rest_framework.permissions import IsAuthenticated
 
 from payment.models import Payment
@@ -17,7 +18,7 @@ class PaymentListAPIView(generics.ListAPIView):
         if self.request.user.is_superuser:
             queryset = Payment.objects.all()
         else:
-            queryset = Payment.objects.filter(borrowing__user=self.request.user)
+            queryset = Payment.objects.filter(borrowing_id__user=self.request.user)
         return queryset
 
 
@@ -25,4 +26,3 @@ class PaymentDetailAPIView(generics.RetrieveAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentDetailSerializer
     permission_classes = [IsAdminOrOwner]
-

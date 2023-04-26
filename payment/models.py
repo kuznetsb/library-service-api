@@ -31,12 +31,12 @@ class Payment(models.Model):
         on_delete=models.CASCADE, related_name="payment"
     )
     session_url = models.URLField()
-    session = models.CharField(max_length=63)
+    session_id = models.CharField(max_length=63)
     money_to_pay = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=0.00,
-        validators=[MinValueValidator(Decimal('0.01'))])
+        validators=[MinValueValidator(Decimal("0.01"))])
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
