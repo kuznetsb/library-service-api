@@ -8,7 +8,7 @@ from payment.serializer import (
 )
 
 
-class PaymentView(
+class PaymentSuccessView(
     mixins.ListModelMixin,
     GenericViewSet,
 ):
@@ -22,3 +22,11 @@ class PaymentView(
         else:
             queryset = Payment.objects.filter(borrowing__user=self.request.user)
         return queryset
+
+
+class PaymentCancelView(PaymentSuccessView):
+
+    def get(self, request, *args, **kwargs):
+
+        return self.list(request, *args, **kwargs)
+
