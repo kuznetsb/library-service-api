@@ -10,6 +10,7 @@ from borrow.models import Borrow
 class PaymentStatus(Enum):
     PENDING = "PENDING"
     PAID = "PAID"
+    EXPIRED = "EXPIRED"
 
 
 class PaymentType(Enum):
