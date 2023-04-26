@@ -2,7 +2,6 @@ import os
 import django
 import stripe
 import datetime
-from django.utils import timezone
 
 from library_service import settings
 
@@ -34,18 +33,18 @@ def create_stripe_session(borrowing_id):
             borrowing_id.expected_return_date - borrowing_id.borrow_date).days  # Convert to cents
 
     session = checkout.Session.create(
-        payment_method_types=['card'],
+        payment_method_types=["card"],
         line_items=[{
-            'price_data': {
-                'currency': 'usd',
-                'product_data': {
-                    'name': f"Borrowing {borrowing_id.book.title}",
+            "price_data": {
+                "currency": "usd",
+                "product_data": {
+                    "name": f"Borrowing {borrowing_id.book.title}",
                 },
-                'unit_amount': unit_amount,
+                "unit_amount": unit_amount,
             },
-            'quantity': 1,
+            "quantity": 1,
         }],
-        mode='payment',
+        mode="payment",
         success_url=url + "/success?session_id={CHECKOUT_SESSION_ID}",
         cancel_url=url + "/cancel?session_id={CHECKOUT_SESSION_ID}",
     )
