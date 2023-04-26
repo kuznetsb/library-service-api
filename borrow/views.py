@@ -1,5 +1,6 @@
 import datetime
 
+from django.urls import reverse
 from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -14,6 +15,8 @@ from borrow.serializers import (
 )
 from rest_framework import viewsets, status
 from rest_framework.response import Response
+
+from payment.models import PaymentStatus
 from payment.stripe_utils import create_stripe_session
 from borrow.telegrambot import send_notification
 
@@ -120,6 +123,49 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "payment_url": payment.session_url,
+                "Time": "but the session is available for only 24h",
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=["GET"], url_path="refresh_payment")
+    def refresh_payment(self, request, pk=None):
+        borrowing = self.get_object()
+        if not hasattr(borrowing, "payment"):
+            return Response(
+                {
+                    "error": "You haven't returned your borrow yet",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment = borrowing.payment
+
+        if payment.status == str(PaymentStatus.PENDING):
+            return Response(
+                {
+                    "error": "Your payment session is not expired yet",
+                    "link": payment.session_url,
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if payment.status == str(PaymentStatus.PAID):
+            return Response(
+                {
+                    "error": "You already returned and paid for the book",
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment.delete()
+        borrowing.refresh_from_db()
+
+        new_payment = create_stripe_session(borrowing)
+
+        return Response(
+            {
+                "payment_url": new_payment.session_url,
                 "Time": "but the session is available for only 24h",
             },
             status=status.HTTP_200_OK,
