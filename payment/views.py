@@ -18,7 +18,7 @@ class PaymentListAPIView(generics.ListAPIView):
         if self.request.user.is_superuser:
             queryset = Payment.objects.all()
         else:
-            queryset = Payment.objects.filter(borrowing__user=self.request.user)
+            queryset = Payment.objects.filter(borrowing_id__user=self.request.user)
         return queryset
 
 
