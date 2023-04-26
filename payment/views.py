@@ -8,7 +8,7 @@ from payment.serializer import (
 )
 
 
-class PaymentSuccessView(
+class PaymentView(
     mixins.ListModelMixin,
     GenericViewSet,
 ):
