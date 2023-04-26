@@ -27,7 +27,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -44,6 +43,7 @@ INSTALLED_APPS = [
     "user",
     "rest_framework_simplejwt",
     "drf_spectacular",
+    "django_q",
 ]
 
 MIDDLEWARE = [
@@ -146,4 +146,16 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "Library service documentation",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+}
+
+Q_CLUSTER = {
+    "name": "library_service",
+    "workers": 8,
+    "recycle": 500,
+    "timeout": 60,
+    "orm": "default",
+    "save_limit": 0,
+    "ack_failures": True,
+    "max_attempts": 1,
+    "attempt_count": 1,
 }

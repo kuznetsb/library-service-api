@@ -1,12 +1,17 @@
+import datetime
 from datetime import date, timedelta
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from django.contrib.auth import get_user_model
+
 from book.models import Book, CoverType
 from borrow.models import Borrow
+from borrow.tasks import filter_borrowings, create_message, check_borrowings_overdue
 
+from borrow.telegrambot import bot_token, chat_id, send_notification
+from unittest.mock import patch
 
 BORROW_URL = reverse("borrow:borrowings-list")
 
@@ -31,7 +36,7 @@ class BorrowViewSetTestCase(APITestCase):
         )
         self.borrow_admin = Borrow.objects.create(
             book=self.book, user=self.user_admin, expected_return_date="2023-05-30"
-            )
+        )
 
     def test_list_borrows(self):
         self.client.force_authenticate(user=self.user_admin)
@@ -97,6 +102,7 @@ class BorrowViewSetTestCase(APITestCase):
             expected_return_date=date.today() + timedelta(days=14),
             actual_return_date=date.today(),
         )
+        self.client.force_authenticate(user=self.user)
         response = self.client.patch(BORROW_URL)
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
         borrow.refresh_from_db()
@@ -111,3 +117,138 @@ class BorrowViewSetTestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
         self.assertEqual(response.data[0]["book"]["title"], self.book.title)
+
+
+class BorrowViewSetTelegramTestCase(APITestCase):
+    def setUp(self):
+        self.user_admin = get_user_model().objects.create_superuser(
+            email="admin2@example.com", password="adminpass2"
+        )
+        self.book = Book.objects.create(
+            title="Test Book1",
+            author="Test Author",
+            inventory=10,
+            cover=CoverType.HARD.value,
+            daily_fee=1.9,
+        )
+
+        self.borrow_data = {
+            "book": self.book.pk,
+            "borrow_date": str(date.today()),
+            "expected_return_date": str(date.today() + timedelta(days=7)),
+        }
+
+    def test_env_variables(self):
+        assert bot_token is not None
+        assert chat_id is not None
+
+    @patch("borrow.telegrambot.requests.get")
+    def test_send_notification(self, mock_requests_get):
+        message = "test_message"
+
+        send_notification(message)
+
+        expected_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        expected_params = {"chat_id": chat_id, "text": message}
+        mock_requests_get.assert_called_once_with(expected_url, expected_params)
+
+    @patch("borrow.views.send_notification")
+    def test_create_borrow_unauthorized_notification(self, mock_send_notification):
+        response = self.client.post(BORROW_URL, data=self.borrow_data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        self.assertEqual(Borrow.objects.count(), 0)
+        mock_send_notification.assert_not_called()
+
+    @patch("borrow.views.send_notification")
+    def test_create_borrow_admin_notification(self, mock_send_notification):
+        self.client.force_authenticate(user=self.user_admin)
+        response = self.client.post(BORROW_URL, data=self.borrow_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(Borrow.objects.count(), 1)
+        self.assertEqual(
+            response.data,
+            {
+                "id": 1,
+                "book": 1,
+                "user_email": self.user_admin.email,
+                "borrow_date": self.borrow_data["borrow_date"],
+                "expected_return_date": self.borrow_data["expected_return_date"],
+                "actual_return_date": None,
+            },
+        )
+        mock_send_notification.assert_called_once()
+
+
+class ScheduledTaskTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.user = get_user_model().objects.create_user(
+            email="test_user@gmail.com", password="testpassword"
+        )
+        self.book = Book.objects.create(
+            title="Test Book",
+            author="Test Author",
+            inventory=1,
+            cover=CoverType.HARD.value,
+            daily_fee=1.2,
+        )
+        self.today_date = datetime.date.today()
+        self.borrow_1 = Borrow.objects.create(
+            book=self.book,
+            user=self.user,
+            expected_return_date=self.today_date + datetime.timedelta(days=2),
+        )
+        self.borrow_2 = Borrow.objects.create(
+            book=self.book,
+            user=self.user,
+            expected_return_date=self.today_date + datetime.timedelta(days=1),
+        )
+        self.borrow_3 = Borrow.objects.create(
+            book=self.book, user=self.user, expected_return_date=self.today_date
+        )
+
+    def test_filter_not_returned_borrowings(self):
+        result = filter_borrowings()
+        self.assertEqual(list(result), [self.borrow_2, self.borrow_3])
+
+    def test_filter_returned_not_shown(self):
+        self.client.force_authenticate(user=self.user)
+        return_url = reverse("borrow:return_borrow", args=[self.borrow_2.id])
+        response = self.client.patch(return_url, {})
+        result = filter_borrowings()
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(result[0], self.borrow_3)
+
+    def test_message_with_no_overdue_borrows(self):
+        self.borrow_2.actual_return_date = self.today_date
+        self.borrow_3.actual_return_date = self.today_date
+        self.borrow_2.save()
+        self.borrow_3.save()
+        overdue_list = filter_borrowings()
+        result = create_message(overdue_list)
+        self.assertEqual(result, "No borrowings overdue today!")
+
+    def test_message_with_overdue_borrows(self):
+        message = (
+            f"Book: {self.borrow_2.book}\nBorrowed by: {self.borrow_2.user.email}\n"
+            f"Borrowed date: {self.borrow_2.borrow_date}\n"
+            f"should be returned on {self.borrow_2.expected_return_date}\n\n"
+            f"Book: {self.borrow_3.book}\nBorrowed by: {self.borrow_3.user.email}\n"
+            f"Borrowed date: {self.borrow_3.borrow_date}\n"
+            f"should be returned on {self.borrow_3.expected_return_date}\n\n"
+        )
+        overdue_list = filter_borrowings()
+        result = create_message(overdue_list)
+        self.assertEqual(result, message)
+
+    @patch("borrow.tasks.send_notification")
+    def test_check_borrowings_overdue(self, mock_send_notification):
+        check_borrowings_overdue()
+        message = (
+            f"Book: {self.borrow_2.book}\nBorrowed by: {self.borrow_2.user.email}\n"
+            f"Borrowed date: {self.borrow_2.borrow_date}\n"
+            f"should be returned on {self.borrow_2.expected_return_date}\n\n"
+            f"Book: {self.borrow_3.book}\nBorrowed by: {self.borrow_3.user.email}\n"
+            f"Borrowed date: {self.borrow_3.borrow_date}\n"
+            f"should be returned on {self.borrow_3.expected_return_date}\n\n"
+        )
+        mock_send_notification.assert_called_once_with(message)

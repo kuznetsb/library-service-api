@@ -4,7 +4,7 @@ from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import IsAuthenticated
 from borrow.models import Borrow
 from borrow.serializers import (
@@ -12,9 +12,9 @@ from borrow.serializers import (
     BorrowListSerializer,
     BorrowDetailSerializer,
 )
-from rest_framework import viewsets, status, serializers
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-
+from payment.stripe_utils import create_stripe_session
 from borrow.telegrambot import send_notification
 
 
@@ -25,7 +25,11 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return BorrowListSerializer
 
-        if self.action == "retrieve":
+        if (
+            self.action == "retrieve"
+            or self.action == "update"
+            or self.action == "partial_update"
+        ):
             return BorrowDetailSerializer
 
         return BorrowSerializer
@@ -73,9 +77,18 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        user = self.request.user
+
+        for borrowing in Borrow.objects.filter(user=user):
+            if (
+                not borrowing.actual_return_date
+                and borrowing.expected_return_date < timezone.now().date()
+            ):
+                raise ValidationError(
+                    "Cannot borrow new books while there are pending payments."
+                )
+
         book = serializer.validated_data["book"]
-        if book.inventory <= 0:
-            raise serializers.ValidationError("This book is out of stock.")
         book.save()
         send_notification(
             f"User email {self.request.user.email}\n"
@@ -102,4 +115,12 @@ class BorrowViewSet(viewsets.ModelViewSet):
         borrowing.actual_return_date = timezone.now().date().isoformat()
         borrowing.save()
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        payment = create_stripe_session(borrowing)
+
+        return Response(
+            {
+                "payment_url": payment.session_url,
+                "Time": "but the session is available for only 24h",
+            },
+            status=status.HTTP_200_OK,
+        )

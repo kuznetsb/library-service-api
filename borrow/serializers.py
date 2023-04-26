@@ -19,7 +19,6 @@ class BorrowSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("actual_return_date",)
 
-
     def validate_book(self, value):
         if value.inventory == 0:
             raise serializers.ValidationError("Book is out of stock")
@@ -50,15 +49,16 @@ class BorrowListSerializer(BorrowSerializer):
             "user_email",
             "borrow_date",
             "expected_return_date",
+            "actual_return_date",
             "book",
         )
 
 
 class BorrowDetailSerializer(BorrowSerializer):
-    borrow_date = serializers.DateField(required=True)
-    expected_return_date = serializers.DateField(required=True)
+    borrow_date = serializers.DateField(read_only=True)
+    expected_return_date = serializers.DateField(read_only=True)
     book = BookSerializer(many=False, read_only=True)
-    user = UserDetailSerializer()
+    user = UserDetailSerializer(read_only=True)
 
     class Meta:
         model = Borrow
@@ -70,3 +70,4 @@ class BorrowDetailSerializer(BorrowSerializer):
             "book",
             "user",
         )
+        read_only_fields = ("actual_return_date",)
