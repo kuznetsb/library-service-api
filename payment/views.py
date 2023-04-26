@@ -1,8 +1,11 @@
+import datetime
+
 from rest_framework import generics
 from rest_framework.decorators import api_view
 
 from rest_framework.response import Response
 
+from borrow.telegrambot import send_notification
 from payment.models import Payment, PaymentStatus
 from payment.permissions import IsAdminOrOwner
 from payment.serializer import (
@@ -27,6 +30,16 @@ def success(request):
     payments = Payment.objects.filter(borrowing__user=request.user)
 
     payments_data = PaymentSerializer(payments, many=True).data
+    payment_details = (
+        f"User email: {payment.borrowing.user.email}\n"
+        f"Book title: {payment.borrowing.book.title}\n"
+        f"Book author: {payment.borrowing.book.author}\n"
+        f"Borrowing date: {payment.borrowing.borrow_date}\n"
+        f"Return date: {datetime.date.today()}\n"
+        f"Money to pay: {payment.money_to_pay}\n"
+        f"Status: {payment.status}\n"
+    )
+    send_notification(payment_details)
 
     return Response({"message": "Payment successful!", "payments": payments_data})
 
