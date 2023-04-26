@@ -17,10 +17,10 @@ jobs:
         with:
           python-version: 3.11
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install python-dotenv
       - name: Load environment variables from .env
-        uses: enfipy/load-dotenv-action@v1
-        with:
-          path: .env
+        run: python -m dotenv -f .env
       - name: Run tests
         run: python manage.py test
