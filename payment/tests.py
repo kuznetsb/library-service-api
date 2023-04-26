@@ -28,9 +28,9 @@ class PaymentModelTest(TestCase):
         self.payment = Payment.objects.create(
             status=PaymentStatus.PENDING.value,
             payment_type=PaymentType.PAYMENT.value,
-            borrowing=self.borrow,
+            borrowing_id=self.borrow,
             session_url="https://example.com/payments/session",
-            session="SESSION_ID",
+            session_id="SESSION_ID",
             money_to_pay=1.50,
         )
 
@@ -70,26 +70,26 @@ class PaymentListAPIViewTest(TestCase):
         self.payment_1 = Payment.objects.create(
             status=PaymentStatus.PENDING.value,
             payment_type=PaymentType.PAYMENT.value,
-            borrowing=borrowing1,
+            borrowing_id=borrowing1,
             session_url="https://example.com/payments/session",
-            session="SESSION_ID_1",
+            session_id="SESSION_ID_1",
             money_to_pay=1.50,
         )
 
         self.payment_2 = Payment.objects.create(
             status=PaymentStatus.PAID.value,
             payment_type=PaymentType.FINE.value,
-            borrowing=borrowing2,
+            borrowing_id=borrowing2,
             session_url="https://example.com/payments/session",
-            session="SESSION_ID_2",
+            session_id="SESSION_ID_2",
             money_to_pay=0.50,
         )
         self.payment_3 = Payment.objects.create(
             status=PaymentStatus.PAID.value,
             payment_type=PaymentType.FINE.value,
-            borrowing=borrowing3,
+            borrowing_id=borrowing3,
             session_url="https://example.com/payments/session",
-            session="SESSION_ID_3",
+            session_id="SESSION_ID_3",
             money_to_pay=0.50,
         )
 
