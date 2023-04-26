@@ -21,7 +21,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
 def create_stripe_session(borrowing):
     url = "http://127.0.0.1:8000/api/payments"
-    if datetime.datetime.now().date() < borrowing.expected_return_date:
+    if datetime.datetime.now().date() <= borrowing.expected_return_date:
         type_payment = PaymentType.PAYMENT
         money_to_pay = (
                                borrowing.expected_return_date - borrowing.borrow_date

@@ -1,7 +1,5 @@
 from rest_framework import generics
 
-from rest_framework.permissions import IsAuthenticated
-
 from payment.models import Payment
 from payment.permissions import IsAdminOrOwner
 from payment.serializer import (
