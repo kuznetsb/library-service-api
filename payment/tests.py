@@ -123,29 +123,3 @@ class PaymentListAPIViewTest(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 3)
 
-
-class PaymentSession(TestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = get_user_model().objects.create_user(
-            email="test@test.com", password="testpass"
-        )
-        self.book = Book.objects.create(
-            title="Test Book",
-            author="Test Author",
-            cover=CoverType.HARD.value,
-            inventory=10,
-            daily_fee=1.50,
-        )
-        self.borrow = Borrow.objects.create(
-            book=self.book, user=self.user, expected_return_date="2022-01-01"
-        )
-        self.url1 = reverse("payment:success", kwargs={"pk": self.borrow.pk})
-
-    def create_stripe_session(self):
-        self.client.force_authenticate(user=self.user)
-        response = self.client.post(
-            reverse("payment:session", kwargs={"pk": self.borrow.pk})
-        )
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data["session_id"], "SESSION_ID")
