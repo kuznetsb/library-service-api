@@ -12,8 +12,6 @@ from borrow.serializers import (
     BorrowListSerializer,
     BorrowDetailSerializer,
 )
-from payment.models import Payment
-from payment.serializer import PaymentSerializer
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from payment.stripe_utils import create_stripe_session
@@ -28,9 +26,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return BorrowListSerializer
 
         if (
-                self.action == "retrieve"
-                or self.action == "patch"
-                or self.action == "partial_update"
+            self.action == "retrieve"
+            or self.action == "patch"
+            or self.action == "partial_update"
         ):
             return BorrowDetailSerializer
 
@@ -83,8 +81,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
         for borrowing in Borrow.objects.filter(user=user):
             if (
-                    not borrowing.actual_return_date
-                    and borrowing.expected_return_date < timezone.now().date()
+                not borrowing.actual_return_date
+                and borrowing.expected_return_date < timezone.now().date()
             ):
                 raise ValidationError(
                     "Cannot borrow new books while there are pending payments."
@@ -122,7 +120,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return Response(
             {
                 "payment_url": payment.session_url,
-                "Time": "but the session is available for only 24h"
+                "Time": "but the session is available for only 24h",
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
