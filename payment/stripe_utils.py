@@ -16,22 +16,28 @@ from payment.models import Payment, PaymentStatus, PaymentType
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 
+FINE_MULTIPLAYER = 2
+
 
 def create_stripe_session(borrowing):
     url = "http://127.0.0.1:8000/api/payments"
-    if datetime.datetime.now().date() < borrowing.expected_return_date:
-        type_payment = PaymentType.PAYMENT
-        money_to_pay = (
-                               borrowing.expected_return_date - borrowing.borrow_date
-                       ).days * borrowing.book.daily_fee
-    else:
-        type_payment = PaymentType.FINE
-        money_to_pay = (
-                               borrowing.actual_return_date - borrowing.expected_return_date
-                       ).days * 2 * borrowing.book.daily_fee
 
-    unit_amount = int(borrowing.book.daily_fee * 100) * (
-            borrowing.expected_return_date - borrowing.borrow_date).days
+    actual_return_date_str = borrowing.actual_return_date
+    actual_return_date = datetime.datetime.strptime(actual_return_date_str, '%Y-%m-%d').date()
+
+    if actual_return_date <= borrowing.expected_return_date:
+        money_to_pay_expected = (actual_return_date - borrowing.borrow_date).days * borrowing.book.daily_fee
+        type_payment = PaymentType.PAYMENT
+        money_to_pay = money_to_pay_expected
+    else:
+        money_to_pay_overdue = (
+                (actual_return_date - borrowing.expected_return_date).days * borrowing.book.daily_fee
+                * FINE_MULTIPLAYER + (borrowing.expected_return_date - borrowing.borrow_date).days *
+                borrowing.book.daily_fee)
+        type_payment = PaymentType.FINE
+        money_to_pay = money_to_pay_overdue
+
+    unit_amount = int(money_to_pay * 100)
 
     session = checkout.Session.create(
         payment_method_types=["card"],
