@@ -1,19 +1,18 @@
 from rest_framework import generics
 from rest_framework.decorators import api_view
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from payment.models import Payment, PaymentStatus
 from payment.permissions import IsAdminOrOwner
 from payment.serializer import (
-    PaymentDetailSerializer,
+    PaymentSerializer,
 )
 
 
 class PaymentDetailAPIView(generics.RetrieveAPIView):
     queryset = Payment.objects.all()
-    serializer_class = PaymentDetailSerializer
+    serializer_class = PaymentSerializer
     permission_classes = [IsAdminOrOwner]
 
 
@@ -27,7 +26,7 @@ def success(request):
 
     payments = Payment.objects.filter(borrowing__user=request.user)
 
-    payments_data = PaymentDetailSerializer(payments, many=True).data
+    payments_data = PaymentSerializer(payments, many=True).data
 
     return Response({"message": "Payment successful!", "payments": payments_data})
 
