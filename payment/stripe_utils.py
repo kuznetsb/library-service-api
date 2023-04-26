@@ -21,16 +21,16 @@ def create_stripe_session(borrowing):
     if datetime.datetime.now().date() < borrowing.expected_return_date:
         type_payment = Payment.payment_type.PaymentType.PAYMENT
         money_to_pay = (
-                               borrowing.expected_return_date - borrowing_id.borrow_date
+                               borrowing.expected_return_date - borrowing.borrow_date
                        ).days * borrowing.book.daily_fee
     else:
         type_payment = Payment.payment_type.PaymentType.FINE
         money_to_pay = (
-                               borrowing.actual_return - borrowing_id.expected_return_date
+                               borrowing.actual_return - borrowing.expected_return_date
                        ).days * 2 * borrowing.book.daily_fee
 
     unit_amount = int(borrowing.book.daily_fee * 100) * (
-            borrowing_id.expected_return_date - borrowing.borrow_date).days  # Convert to cents
+            borrowing.expected_return_date - borrowing.borrow_date).days  # Convert to cents
 
     session = checkout.Session.create(
         payment_method_types=["card"],
