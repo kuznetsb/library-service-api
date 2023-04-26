@@ -12,8 +12,6 @@ load_dotenv()
 
 
 from stripe import checkout
-
-from borrow.models import Borrow
 from payment.models import Payment, PaymentStatus, PaymentType
 
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
@@ -33,7 +31,7 @@ def create_stripe_session(borrowing):
                        ).days * 2 * borrowing.book.daily_fee
 
     unit_amount = int(borrowing.book.daily_fee * 100) * (
-            borrowing.expected_return_date - borrowing.borrow_date).days  # Convert to cents
+            borrowing.expected_return_date - borrowing.borrow_date).days
 
     session = checkout.Session.create(
         payment_method_types=["card"],
@@ -62,7 +60,3 @@ def create_stripe_session(borrowing):
     )
 
     return payment
-
-
-if __name__ == "__main__":
-    create_stripe_session(borrowing=Borrow.objects.get(pk=9))

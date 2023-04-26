@@ -23,10 +23,3 @@ class PaymentSuccessView(
             queryset = Payment.objects.filter(borrowing__user=self.request.user)
         return queryset
 
-
-class PaymentCancelView(PaymentSuccessView):
-
-    def get(self, request, *args, **kwargs):
-
-        return self.list(request, *args, **kwargs)
-
