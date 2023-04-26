@@ -131,57 +131,57 @@ class PaymentListAPIViewTest(TestCase):
         self.assertEqual(len(response.data), 3)
 
 
-# class PaymentDetailViewTestCase(TestCase):
-#     def setUp(self):
-#         self.client = APIClient()
-#         self.book = Book.objects.create(
-#             title="Test Book",
-#             author="Test Author",
-#             inventory=3,
-#             daily_fee=Decimal("2.5"))
-#         self.borrowing1 = Borrow.objects.create(
-#             book=self.book,
-#             borrow_date=datetime.date.today() - datetime.timedelta(days=5),
-#             expected_return_date=datetime.date.today() + datetime.timedelta(days=5),
-#             user=get_user_model().objects.create_user(
-#                 email="test@email.com", password="testpass",
-#             ))
-#         self.borrowing2 = Borrow.objects.create(
-#             book=self.book,
-#             borrow_date=datetime.date.today() - datetime.timedelta(days=5),
-#             expected_return_date=datetime.date.today() + datetime.timedelta(days=5),
-#             user=get_user_model().objects.create_user(
-#                 email="test1@email.com", password="testpass1",
-#             ))
-#         self.url = reverse("payment:success", kwargs={"pk": Payment.session_id})
-#         self.url2 = reverse("payment:success", kwargs={"pk": Payment.session_id})
-#
-#     def test_create_stripe_session(self):
-#         session_data = {"id": "test_session_id", "url": "https://checkout.stripe.com/pay/test_session_id"}
-#         with self.subTest("Test successful payment"):
-#             create_stripe_session = MagicMock(return_value=Payment.objects.create(
-#                 status=PaymentStatus.PENDING,
-#                 payment_type=PaymentType.PAYMENT,
-#                 borrowing=self.borrowing1,
-#                 money_to_pay=12.5,
-#                 session_url=session_data["url"],
-#                 session_id=session_data["id"],
-#             ))
-#             response = self.client.post(self.url)
-#             self.assertEqual(response.status_code, status.HTTP_200_OK)
-#             self.assertEqual(response.data, session_data)
-#             create_stripe_session.assert_called_once_with(self.borrowing1)
-#
-#         with self.subTest("Test failed payment"):
-#             create_stripe_session = MagicMock(return_value=Payment.objects.create(
-#                 status=PaymentStatus.PENDING,
-#                 payment_type=PaymentType.FINE,
-#                 borrowing=self.borrowing2,
-#                 money_to_pay=25.0,
-#                 session_url=session_data["url"],
-#                 session_id=session_data["id"],
-#             ))
-#             response = self.client.post(self.url2)
-#             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-#             self.assertEqual(response.data, {"error": "Cannot create payment session for a late return"})
-#             create_stripe_session.assert_called_once_with(self.borrowing2)
+class PaymentDetailViewTestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.book = Book.objects.create(
+            title="Test Book",
+            author="Test Author",
+            inventory=3,
+            daily_fee=Decimal("2.5"))
+        self.borrowing1 = Borrow.objects.create(
+            book=self.book,
+            borrow_date=datetime.date.today() - datetime.timedelta(days=5),
+            expected_return_date=datetime.date.today() + datetime.timedelta(days=5),
+            user=get_user_model().objects.create_user(
+                email="test@email.com", password="testpass",
+            ))
+        self.borrowing2 = Borrow.objects.create(
+            book=self.book,
+            borrow_date=datetime.date.today() - datetime.timedelta(days=5),
+            expected_return_date=datetime.date.today() + datetime.timedelta(days=5),
+            user=get_user_model().objects.create_user(
+                email="test1@email.com", password="testpass1",
+            ))
+        self.url = reverse("payment:success", kwargs={"pk": Payment.session_id})
+        self.url2 = reverse("payment:success", kwargs={"pk": Payment.session_id})
+
+    def test_create_stripe_session(self):
+        session_data = {"id": "test_session_id", "url": "https://checkout.stripe.com/pay/test_session_id"}
+        with self.subTest("Test successful payment"):
+            create_stripe_session = MagicMock(return_value=Payment.objects.create(
+                status=PaymentStatus.PENDING,
+                payment_type=PaymentType.PAYMENT,
+                borrowing=self.borrowing1,
+                money_to_pay=12.5,
+                session_url=session_data["url"],
+                session_id=session_data["id"],
+            ))
+            response = self.client.post(self.url)
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data, session_data)
+            create_stripe_session.assert_called_once_with(self.borrowing1)
+
+        with self.subTest("Test failed payment"):
+            create_stripe_session = MagicMock(return_value=Payment.objects.create(
+                status=PaymentStatus.PENDING,
+                payment_type=PaymentType.FINE,
+                borrowing=self.borrowing2,
+                money_to_pay=25.0,
+                session_url=session_data["url"],
+                session_id=session_data["id"],
+            ))
+            response = self.client.post(self.url2)
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(response.data, {"error": "Cannot create payment session for a late return"})
+            create_stripe_session.assert_called_once_with(self.borrowing2)
