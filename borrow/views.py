@@ -27,7 +27,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
         if (
             self.action == "retrieve"
-            or self.action == "patch"
+            or self.action == "update"
             or self.action == "partial_update"
         ):
             return BorrowDetailSerializer
