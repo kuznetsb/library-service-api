@@ -1,11 +1,10 @@
 from django.urls import path
 
-from payment.views import PaymentListAPIView, PaymentDetailAPIView
+from payment.views import PaymentView
 
 app_name = "payment"
 
 urlpatterns = [
-    path("success/", PaymentListAPIView.as_view(), name="payment-list"),
-    path("success/<pk>", PaymentDetailAPIView.as_view(), name="success"),
-    path("cancel/", PaymentDetailAPIView.as_view(), name="cancel"),
-]
+    path("success/", PaymentView.as_view({"get": "list"}), name="payment-list"),
+    path("cancel/", PaymentView.as_view({"get": "list"}), name="cancel"),
+    ]
