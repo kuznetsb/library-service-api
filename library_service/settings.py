@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -27,6 +27,9 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+
+STRIPE_SECRET_KEY = "sk_test_51N0inuAKUJ6NU72JGnGrabUXIMvvNOFztBqDVD3N5jkhd9FKMRxEUj7V27Ex9ijfOUDSkXFS7imGqfX9NUXixU3H00usCzbodU"
+STRIPE_PUBLIC_KEY = os.getenv("STRIPE_PUBLIC_KEY")
 
 # Application definition
 

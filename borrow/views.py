@@ -12,10 +12,11 @@ from borrow.serializers import (
     BorrowListSerializer,
     BorrowDetailSerializer,
 )
-
-from rest_framework import viewsets, status, serializers
+from payment.models import Payment
+from payment.serializer import PaymentSerializer
+from rest_framework import viewsets, status
 from rest_framework.response import Response
-
+from payment.stripe_utils import create_stripe_session
 from borrow.telegrambot import send_notification
 
 
@@ -27,9 +28,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return BorrowListSerializer
 
         if (
-            self.action == "retrieve"
-            or self.action == "patch"
-            or self.action == "partial_update"
+                self.action == "retrieve"
+                or self.action == "patch"
+                or self.action == "partial_update"
         ):
             return BorrowDetailSerializer
 
@@ -81,8 +82,13 @@ class BorrowViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         for borrowing in Borrow.objects.filter(user=user):
-            if not borrowing.actual_return_date and borrowing.expected_return_date < timezone.now().date():
-                raise ValidationError("Cannot borrow new books while there are pending payments.")
+            if (
+                    not borrowing.actual_return_date
+                    and borrowing.expected_return_date < timezone.now().date()
+            ):
+                raise ValidationError(
+                    "Cannot borrow new books while there are pending payments."
+                )
 
         book = serializer.validated_data["book"]
         book.save()
@@ -111,4 +117,12 @@ class BorrowViewSet(viewsets.ModelViewSet):
         borrowing.actual_return_date = timezone.now().date().isoformat()
         borrowing.save()
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        payment = create_stripe_session(borrowing)
+
+        return Response(
+            {
+                "payment_url": payment.session_url,
+                "Time": "but the session is available for only 24h"
+            },
+            status=status.HTTP_200_OK
+        )
