@@ -68,5 +68,5 @@ def create_stripe_session(borrowing):
 
 
 if __name__ == "__main__":
-    a = create_stripe_session(borrowing=Borrow.objects.get(pk=3))
-    print(a.session_url)
+    create_stripe_session(borrowing=Borrow.objects.get(pk=3))
+
